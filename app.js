@@ -518,39 +518,6 @@ function clearAll() {
 }
 window.clearAll = clearAll;
 
-// --- Excel Upload ---
-function setupEventListeners() {
-  // Click or Double-click title to open Admin Login
-  const mainTitle = document.querySelector('.main-title');
-  if (mainTitle) {
-    mainTitle.addEventListener('dblclick', openLoginModal);
-    mainTitle.addEventListener('click', openLoginModal);
-  }
-
-  // Close modals on overlay click
-  ['login-modal', 'admin-modal'].forEach(id => {
-    const modal = document.getElementById(id);
-    if (modal) {
-      modal.addEventListener('click', e => {
-        if (e.target === modal) modal.classList.remove('active');
-      });
-    }
-  });
-
-  // Excel file upload
-  const excelUpload = document.getElementById('excel-upload');
-  if (excelUpload) {
-    excelUpload.addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(ev) {
-        try {
-          const data = new Uint8Array(ev.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
 // --- Parse Excel JSON to Employee List ---
 function parseExcelJSON(json) {
   let nameIdx = 0;
@@ -607,13 +574,25 @@ function parseExcelJSON(json) {
 
   for (let i = startIndex; i < json.length; i++) {
     const row = json[i];
-    if (!row || row.length <= Math.max(nameIdx, scoreIdx)) continue;
-    const name = row[nameIdx] ? row[nameIdx].toString() : `พนง.${i}`;
-    const score = parseInt(row[scoreIdx]) || 0;
-    const dept = (deptIdx !== -1 && row[deptIdx]) ? row[deptIdx].toString().trim() : 'General';
+    if (!row || row.length === 0) continue;
+    
+    const name = (nameIdx < row.length && row[nameIdx] !== undefined) ? row[nameIdx].toString().trim() : '';
+    if (!name) continue; // Skip blank names
+    
+    let score = 0;
+    if (scoreIdx < row.length && row[scoreIdx] !== undefined && row[scoreIdx] !== null) {
+      score = parseInt(row[scoreIdx]) || 0;
+    }
+    
+    let dept = 'General';
+    if (deptIdx !== -1 && deptIdx < row.length && row[deptIdx] !== undefined && row[deptIdx] !== null) {
+      dept = row[deptIdx].toString().trim();
+    }
+    
     newEmployees.push({
       id: Date.now().toString() + i + Math.random(),
-      name, score,
+      name, 
+      score,
       department: dept,
       color: getDepartmentColor(dept)
     });
@@ -622,7 +601,7 @@ function parseExcelJSON(json) {
   return newEmployees;
 }
 
-// --- Excel Upload ---
+// --- Setup Event Listeners ---
 function setupEventListeners() {
   // Click or Double-click title to open Admin Login
   const mainTitle = document.querySelector('.main-title');
