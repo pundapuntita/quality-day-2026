@@ -26,16 +26,20 @@ function getDepartmentColor(dept) {
     case 'QC':
       return 'hsl(199, 80%, 75%)'; // Soft Pastel Blue
     case 'PD ASEPTIC':
+    case 'PDF':
       return 'hsl(24, 85%, 73%)';  // Soft Pastel Orange
     case 'PD PACKING':
+    case 'PDP':
       return 'hsl(53, 90%, 68%)';  // Soft Pastel Yellow
     case 'MM':
       return 'hsl(288, 65%, 73%)'; // Soft Pastel Purple
     case 'E&M':
     case 'E & M':
+    case 'EM':
       return 'hsl(328, 85%, 78%)'; // Soft Pastel Pink
     case 'RA':
     case 'HR':
+    case 'HR&SS':
     case 'HSE':
     case 'FA':
     case 'TRAINEE':
