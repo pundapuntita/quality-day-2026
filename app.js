@@ -61,15 +61,12 @@ const DEFAULT_EMPLOYEES = Array.from({ length: 120 }).map((_, i) => {
   };
 });
 
-// --- Fetch Shared Excel File from Google Sheets ---
+// --- Fetch Shared Excel File via Vercel Serverless Function Proxy ---
 function fetchSharedExcel() {
-  const sheetId = '13ekBJwhxXbAyvr3OpZd8mf8BTPPn-XIRN7Ntgs9G4Ug';
-  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=xlsx`;
-
-  fetch(url)
+  fetch('/api/sheet')
     .then(response => {
       if (!response.ok) {
-        throw new Error('Google Sheet is not shared publicly or link is invalid.');
+        throw new Error('Failed to fetch from proxy API');
       }
       return response.arrayBuffer();
     })
@@ -85,11 +82,11 @@ function fetchSharedExcel() {
         saveData();
         resizeCanvas();
         syncPhysics();
-        console.log('Loaded shared data from Google Sheets successfully.');
+        console.log('Loaded shared data from Google Sheets successfully via Vercel proxy.');
       }
     })
     .catch(err => {
-      console.log('No Google Sheet data auto-loaded:', err.message);
+      console.log('No shared data auto-loaded:', err.message);
     });
 }
 
