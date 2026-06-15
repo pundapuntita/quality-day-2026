@@ -61,12 +61,16 @@ const DEFAULT_EMPLOYEES = Array.from({ length: 120 }).map((_, i) => {
   };
 });
 
-// --- Fetch Shared Excel File via Vercel Serverless Function Proxy ---
+// --- Fetch Shared Excel File from Google Sheets via CORS Proxy ---
 function fetchSharedExcel() {
-  fetch('/api/sheet')
+  const sheetId = '13ekBJwhxXbAyvr3OpZd8mf8BTPPn-XIRN7Ntgs9G4Ug';
+  const targetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=xlsx`;
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+
+  fetch(proxyUrl)
     .then(response => {
       if (!response.ok) {
-        throw new Error('Failed to fetch from proxy API');
+        throw new Error('Failed to fetch from CORS proxy');
       }
       return response.arrayBuffer();
     })
@@ -82,7 +86,7 @@ function fetchSharedExcel() {
         saveData();
         resizeCanvas();
         syncPhysics();
-        console.log('Loaded shared data from Google Sheets successfully via Vercel proxy.');
+        console.log('Loaded shared data from Google Sheets successfully via CORS proxy.');
       }
     })
     .catch(err => {
