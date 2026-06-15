@@ -567,3 +567,39 @@ button, input, select { font-family: var(--font-family); color: inherit; }
     letter-spacing: 2px;
   }
 }
+
+/* Subtle Admin Gear Button */
+.admin-trigger-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 15px var(--glass-shadow);
+  z-index: 100;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  transition: all 0.3s ease;
+  outline: none;
+}
+.admin-trigger-btn:hover {
+  transform: rotate(45deg) scale(1.1);
+  background: rgba(255, 255, 255, 0.6);
+}
+@media (max-width: 480px) {
+  .admin-trigger-btn {
+    bottom: 15px;
+    right: 15px;
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+}

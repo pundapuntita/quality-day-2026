@@ -450,10 +450,11 @@ window.clearAll = clearAll;
 
 // --- Excel Upload ---
 function setupEventListeners() {
-  // Double-click title to open Admin Login (only dblclick, NOT single click)
+  // Click or Double-click title to open Admin Login
   const mainTitle = document.querySelector('.main-title');
   if (mainTitle) {
     mainTitle.addEventListener('dblclick', openLoginModal);
+    mainTitle.addEventListener('click', openLoginModal);
   }
 
   // Close modals on overlay click
