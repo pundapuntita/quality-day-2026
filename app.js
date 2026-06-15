@@ -57,12 +57,15 @@ const DEFAULT_EMPLOYEES = Array.from({ length: 120 }).map((_, i) => {
   };
 });
 
-// --- Fetch Shared Excel File from Server ---
+// --- Fetch Shared Excel File from Google Sheets ---
 function fetchSharedExcel() {
-  fetch('./data.xlsx')
+  const sheetId = '13ekBJwhxXbAyvr3OpZd8mf8BTPPn-XIRN7Ntgs9G4Ug';
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=xlsx`;
+
+  fetch(url)
     .then(response => {
       if (!response.ok) {
-        throw new Error('data.xlsx not found on server');
+        throw new Error('Google Sheet is not shared publicly or link is invalid.');
       }
       return response.arrayBuffer();
     })
@@ -78,11 +81,11 @@ function fetchSharedExcel() {
         saveData();
         resizeCanvas();
         syncPhysics();
-        console.log('Loaded shared data.xlsx from server successfully.');
+        console.log('Loaded shared data from Google Sheets successfully.');
       }
     })
     .catch(err => {
-      console.log('No shared data.xlsx auto-loaded:', err.message);
+      console.log('No Google Sheet data auto-loaded:', err.message);
     });
 }
 
