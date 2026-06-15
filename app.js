@@ -277,6 +277,18 @@ function updatePhysics(timestamp) {
   // Sort by score descending
   const sortedBalloons = [...balloonPhysicsList].sort((a, b) => b.score - a.score);
 
+  const maxScore = sortedBalloons.length > 0 ? sortedBalloons[0].score : 0;
+
+  // Move the highest scorer (index 0) to the middle of the first row (cols / 2)
+  if (sortedBalloons.length > 2) {
+    const centerCol = Math.floor(cols / 2);
+    if (centerCol > 0 && centerCol < sortedBalloons.length) {
+      const temp = sortedBalloons[0];
+      sortedBalloons[0] = sortedBalloons[centerCol];
+      sortedBalloons[centerCol] = temp;
+    }
+  }
+
   sortedBalloons.forEach((bp, index) => {
     const col = index % cols;
     const row = Math.floor(index / cols);
@@ -289,7 +301,12 @@ function updatePhysics(timestamp) {
 
     // Vertical zigzag
     const staggerY = (col % 2 === 0) ? -20 : 20; // Reduced vertical zigzag on smaller screen
-    const targetY = titleBuffer + (row * rowSpacing) + (screenW < 480 ? staggerY * 0.4 : (screenW < 1024 ? staggerY * 0.7 : staggerY));
+    let targetY = titleBuffer + (row * rowSpacing) + (screenW < 480 ? staggerY * 0.4 : (screenW < 1024 ? staggerY * 0.7 : staggerY));
+
+    // If this balloon has the highest score, push it slightly higher above the rest of the row
+    if (bp.score === maxScore && maxScore > 0) {
+      targetY -= (screenW < 480 ? 12 : 25);
+    }
 
     bp.targetY = targetY;
     bp.anchorY = targetY + (screenW < 480 ? 60 : (screenW < 1024 ? 90 : 120));
@@ -584,6 +601,8 @@ function parseExcelJSON(json) {
     if (scoreIdx < row.length && row[scoreIdx] !== undefined && row[scoreIdx] !== null) {
       score = parseInt(row[scoreIdx]) || 0;
     }
+    
+    if (score <= 0) continue; // Skip scores <= 0
     
     let dept = 'General';
     if (deptIdx !== -1 && deptIdx < row.length && row[deptIdx] !== undefined && row[deptIdx] !== null) {
