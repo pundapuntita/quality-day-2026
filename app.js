@@ -57,6 +57,35 @@ const DEFAULT_EMPLOYEES = Array.from({ length: 120 }).map((_, i) => {
   };
 });
 
+// --- Fetch Shared Excel File from Server ---
+function fetchSharedExcel() {
+  fetch('./data.xlsx')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('data.xlsx not found on server');
+      }
+      return response.arrayBuffer();
+    })
+    .then(buffer => {
+      const data = new Uint8Array(buffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      
+      const newEmployees = parseExcelJSON(json);
+      if (newEmployees.length > 0) {
+        employees = newEmployees;
+        saveData();
+        resizeCanvas();
+        syncPhysics();
+        console.log('Loaded shared data.xlsx from server successfully.');
+      }
+    })
+    .catch(err => {
+      console.log('No shared data.xlsx auto-loaded:', err.message);
+    });
+}
+
 // --- Initialize App ---
 function init() {
   loadData();
@@ -64,6 +93,9 @@ function init() {
   syncPhysics();
   setupEventListeners();
   requestAnimationFrame(updatePhysics);
+  
+  // Try to load shared data if it exists in the repo
+  fetchSharedExcel();
 }
 
 function loadData() {
@@ -512,73 +544,111 @@ function setupEventListeners() {
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
           const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-          let nameIdx = 0;
-          let scoreIdx = 1;
-          let deptIdx = -1;
-          let startIndex = 0;
+// --- Parse Excel JSON to Employee List ---
+function parseExcelJSON(json) {
+  let nameIdx = 0;
+  let scoreIdx = 1;
+  let deptIdx = -1;
+  let startIndex = 0;
 
-          if (json.length > 0) {
-            const firstRow = json[0] || [];
-            let foundHeader = false;
-            
-            // Check if any cell in the first row contains common header keywords
-            for (let col = 0; col < firstRow.length; col++) {
-              const cellText = firstRow[col] ? firstRow[col].toString().toLowerCase().trim() : '';
-              if (
-                cellText.includes('name') || cellText.includes('ชื่อ') ||
-                cellText.includes('score') || cellText.includes('คะแนน') || cellText.includes('point') || cellText.includes('qp') ||
-                cellText.includes('dept') || cellText.includes('แผนก') || cellText.includes('department')
-              ) {
-                foundHeader = true;
-                break;
-              }
-            }
+  if (json.length > 0) {
+    const firstRow = json[0] || [];
+    let foundHeader = false;
+    
+    for (let col = 0; col < firstRow.length; col++) {
+      const cellText = firstRow[col] ? firstRow[col].toString().toLowerCase().trim() : '';
+      if (
+        cellText.includes('name') || cellText.includes('ชื่อ') ||
+        cellText.includes('score') || cellText.includes('คะแนน') || cellText.includes('point') || cellText.includes('qp') ||
+        cellText.includes('dept') || cellText.includes('แผนก') || cellText.includes('department')
+      ) {
+        foundHeader = true;
+        break;
+      }
+    }
 
-            if (foundHeader) {
-              startIndex = 1;
-              let detectedNameIdx = -1;
-              let detectedScoreIdx = -1;
-              let detectedDeptIdx = -1;
+    if (foundHeader) {
+      startIndex = 1;
+      let detectedNameIdx = -1;
+      let detectedScoreIdx = -1;
+      let detectedDeptIdx = -1;
 
-              for (let col = 0; col < firstRow.length; col++) {
-                const headerText = firstRow[col] ? firstRow[col].toString().toLowerCase().trim() : '';
-                if (headerText.includes('name') || headerText.includes('ชื่อ')) {
-                  detectedNameIdx = col;
-                } else if (headerText.includes('score') || headerText.includes('คะแนน') || headerText.includes('point') || headerText.includes('qp')) {
-                  detectedScoreIdx = col;
-                } else if (headerText.includes('dept') || headerText.includes('แผนก') || headerText.includes('department')) {
-                  detectedDeptIdx = col;
-                }
-              }
+      for (let col = 0; col < firstRow.length; col++) {
+        const headerText = firstRow[col] ? firstRow[col].toString().toLowerCase().trim() : '';
+        if (headerText.includes('name') || headerText.includes('ชื่อ')) {
+          detectedNameIdx = col;
+        } else if (headerText.includes('score') || headerText.includes('คะแนน') || headerText.includes('point') || headerText.includes('qp')) {
+          detectedScoreIdx = col;
+        } else if (headerText.includes('dept') || headerText.includes('แผนก') || headerText.includes('department')) {
+          detectedDeptIdx = col;
+        }
+      }
 
-              if (detectedNameIdx !== -1) nameIdx = detectedNameIdx;
-              if (detectedScoreIdx !== -1) scoreIdx = detectedScoreIdx;
-              if (detectedDeptIdx !== -1) deptIdx = detectedDeptIdx;
-            }
-          }
+      if (detectedNameIdx !== -1) nameIdx = detectedNameIdx;
+      if (detectedScoreIdx !== -1) scoreIdx = detectedScoreIdx;
+      if (detectedDeptIdx !== -1) deptIdx = detectedDeptIdx;
+    }
+  }
 
-          // Fallback if department column wasn't found/matched, but sheet has 3+ columns
-          if (deptIdx === -1 && json[0] && json[0].length > 2) {
-            if (nameIdx !== 2 && scoreIdx !== 2) {
-              deptIdx = 2;
-            }
-          }
+  if (deptIdx === -1 && json[0] && json[0].length > 2) {
+    if (nameIdx !== 2 && scoreIdx !== 2) {
+      deptIdx = 2;
+    }
+  }
 
-          const newEmployees = [];
+  const newEmployees = [];
 
-          for (let i = startIndex; i < json.length; i++) {
-            const row = json[i];
-            if (!row || row.length <= Math.max(nameIdx, scoreIdx)) continue;
-            const name = row[nameIdx] ? row[nameIdx].toString() : `พนง.${i}`;
-            const score = parseInt(row[scoreIdx]) || 0;
-            const dept = (deptIdx !== -1 && row[deptIdx]) ? row[deptIdx].toString().trim() : 'General';
-            newEmployees.push({
-              id: Date.now().toString() + i + Math.random(),
-              name, score,
-              department: dept,
-              color: getDepartmentColor(dept)
-            });
-          }
+  for (let i = startIndex; i < json.length; i++) {
+    const row = json[i];
+    if (!row || row.length <= Math.max(nameIdx, scoreIdx)) continue;
+    const name = row[nameIdx] ? row[nameIdx].toString() : `พนง.${i}`;
+    const score = parseInt(row[scoreIdx]) || 0;
+    const dept = (deptIdx !== -1 && row[deptIdx]) ? row[deptIdx].toString().trim() : 'General';
+    newEmployees.push({
+      id: Date.now().toString() + i + Math.random(),
+      name, score,
+      department: dept,
+      color: getDepartmentColor(dept)
+    });
+  }
+
+  return newEmployees;
+}
+
+// --- Excel Upload ---
+function setupEventListeners() {
+  // Click or Double-click title to open Admin Login
+  const mainTitle = document.querySelector('.main-title');
+  if (mainTitle) {
+    mainTitle.addEventListener('dblclick', openLoginModal);
+    mainTitle.addEventListener('click', openLoginModal);
+  }
+
+  // Close modals on overlay click
+  ['login-modal', 'admin-modal'].forEach(id => {
+    const modal = document.getElementById(id);
+    if (modal) {
+      modal.addEventListener('click', e => {
+        if (e.target === modal) modal.classList.remove('active');
+      });
+    }
+  });
+
+  // Excel file upload
+  const excelUpload = document.getElementById('excel-upload');
+  if (excelUpload) {
+    excelUpload.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        try {
+          const data = new Uint8Array(ev.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+          const newEmployees = parseExcelJSON(json);
 
           if (newEmployees.length > 0) {
             employees = newEmployees;

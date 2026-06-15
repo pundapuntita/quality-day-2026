@@ -354,15 +354,16 @@ button, input, select { font-family: var(--font-family); color: inherit; }
   100% { transform: scale(0); opacity: 0; }
 }
 
-/* --- Crown & Sparkles (Dynamically added via JS) --- */
 .crown-container {
   display: none;
   position: absolute;
-  top: -15px;
-  right: -5px;
-  width: 30px;
-  height: 30px;
+  top: -24px;              /* Sitting directly above the balloon */
+  left: 50%;               /* Center horizontally */
+  transform: translateX(-50%);
+  width: 44px;
+  height: 32px;
   pointer-events: none;
+  z-index: 12;
 }
 .balloon.highest .crown-container {
   display: block;
