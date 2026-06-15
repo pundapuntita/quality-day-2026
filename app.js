@@ -61,32 +61,62 @@ const DEFAULT_EMPLOYEES = Array.from({ length: 120 }).map((_, i) => {
   };
 });
 
-// --- Fetch Shared Excel File from Google Sheets via CORS Proxy ---
+// --- Parse CSV String into Array of Arrays ---
+function parseCSV(text) {
+  const lines = [];
+  let row = [""];
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const nextChar = text[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        row[row.length - 1] += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      row.push("");
+    } else if ((char === '\r' || char === '\n') && !inQuotes) {
+      if (char === '\r' && nextChar === '\n') {
+        i++;
+      }
+      lines.push(row);
+      row = [""];
+    } else {
+      row[row.length - 1] += char;
+    }
+  }
+  if (row.length > 1 || row[0] !== "") {
+    lines.push(row);
+  }
+  return lines;
+}
+
+// --- Fetch Shared Excel File from Google Sheets (CORS-safe) ---
 function fetchSharedExcel() {
   const sheetId = '13ekBJwhxXbAyvr3OpZd8mf8BTPPn-XIRN7Ntgs9G4Ug';
-  const targetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=xlsx`;
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
 
-  fetch(proxyUrl)
+  fetch(url)
     .then(response => {
       if (!response.ok) {
-        throw new Error('Failed to fetch from CORS proxy');
+        throw new Error('Failed to fetch from Google Sheets');
       }
-      return response.arrayBuffer();
+      return response.text();
     })
-    .then(buffer => {
-      const data = new Uint8Array(buffer);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-      
-      const newEmployees = parseExcelJSON(json);
+    .then(text => {
+      const csvLines = parseCSV(text);
+      const newEmployees = parseExcelJSON(csvLines);
       if (newEmployees.length > 0) {
         employees = newEmployees;
         saveData();
         resizeCanvas();
         syncPhysics();
-        console.log('Loaded shared data from Google Sheets successfully via CORS proxy.');
+        console.log('Loaded shared data from Google Sheets successfully.');
       }
     })
     .catch(err => {
