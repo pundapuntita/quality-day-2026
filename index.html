@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>quality day 2026</title>
+  <meta name="description" content="บอร์ดแสดง Quality Points ในรูปแบบ 3D พาสเทลเป๊ะ 1000%">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Bubbles&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=3">
+</head>
+<body data-theme="day">
+
+  <!-- Dedicated fixed background to prevent mobile scrolling bugs -->
+  <div class="fixed-bg"></div>
+
+  <div class="app-container">
+
+    <!-- Real 3D Background Arena -->
+    <div class="sky-arena" id="sky-arena">
+      <h1 class="main-title">quality day 2026</h1>
+      <canvas id="string-canvas"></canvas>
+      <div class="balloons-holder" id="balloons-holder"></div>
+    </div>
+
+    <!-- Login Modal (inside app-container, hidden by default via CSS display:none) -->
+    <div id="login-modal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Admin Login</h2>
+          <button class="modal-close" onclick="closeLoginModal()">&times;</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="admin-password" class="input-field" placeholder="Enter password" autocomplete="off" onkeydown="if(event.key==='Enter') verifyLogin()">
+        </div>
+        <button class="btn btn-primary" onclick="verifyLogin()" style="margin-top:10px;">Login</button>
+      </div>
+    </div>
+
+    <!-- Admin Dashboard Modal -->
+    <div id="admin-modal" class="modal-overlay">
+      <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+          <h2 class="modal-title">Admin Dashboard</h2>
+          <button class="modal-close" onclick="closeAdminModal()">&times;</button>
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label">Upload Employee Data (Excel)</label>
+          <div style="font-size: 0.75rem; color: #666; margin-bottom: 10px;">
+            Columns must be: <b>Name</b> | <b>Score</b> | <b>Department</b>
+          </div>
+          <input type="file" id="excel-upload" class="input-field" accept=".xlsx, .xls, .csv">
+        </div>
+        <button class="btn btn-secondary" onclick="clearAll()">Clear All Balloons</button>
+      </div>
+    </div>
+
+  </div><!-- end .app-container -->
+
+  <!-- SheetJS for Excel Parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="app.js?v=3"></script>
+</body>
+</html>
