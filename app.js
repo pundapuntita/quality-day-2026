@@ -487,26 +487,50 @@ function setupEventListeners() {
           let startIndex = 0;
 
           if (json.length > 0) {
-            const looksLikeHeader = isNaN(parseInt(json[0][1])) && isNaN(parseInt(json[0][0]));
-            if (looksLikeHeader) {
+            const firstRow = json[0] || [];
+            let foundHeader = false;
+            
+            // Check if any cell in the first row contains common header keywords
+            for (let col = 0; col < firstRow.length; col++) {
+              const cellText = firstRow[col] ? firstRow[col].toString().toLowerCase().trim() : '';
+              if (
+                cellText.includes('name') || cellText.includes('ชื่อ') ||
+                cellText.includes('score') || cellText.includes('คะแนน') || cellText.includes('point') || cellText.includes('qp') ||
+                cellText.includes('dept') || cellText.includes('แผนก') || cellText.includes('department')
+              ) {
+                foundHeader = true;
+                break;
+              }
+            }
+
+            if (foundHeader) {
               startIndex = 1;
-              const headers = json[0] || [];
-              for (let col = 0; col < headers.length; col++) {
-                const headerText = headers[col] ? headers[col].toString().toLowerCase().trim() : '';
+              let detectedNameIdx = -1;
+              let detectedScoreIdx = -1;
+              let detectedDeptIdx = -1;
+
+              for (let col = 0; col < firstRow.length; col++) {
+                const headerText = firstRow[col] ? firstRow[col].toString().toLowerCase().trim() : '';
                 if (headerText.includes('name') || headerText.includes('ชื่อ')) {
-                  nameIdx = col;
+                  detectedNameIdx = col;
                 } else if (headerText.includes('score') || headerText.includes('คะแนน') || headerText.includes('point') || headerText.includes('qp')) {
-                  scoreIdx = col;
+                  detectedScoreIdx = col;
                 } else if (headerText.includes('dept') || headerText.includes('แผนก') || headerText.includes('department')) {
-                  deptIdx = col;
+                  detectedDeptIdx = col;
                 }
               }
+
+              if (detectedNameIdx !== -1) nameIdx = detectedNameIdx;
+              if (detectedScoreIdx !== -1) scoreIdx = detectedScoreIdx;
+              if (detectedDeptIdx !== -1) deptIdx = detectedDeptIdx;
             }
           }
 
-          // Fallback if department column header wasn't found but sheet has 3+ columns
+          // Fallback if department column wasn't found/matched, but sheet has 3+ columns
           if (deptIdx === -1 && json[0] && json[0].length > 2) {
-            deptIdx = 2;
+            if (nameIdx !== 2 && scoreIdx !== 2) {
+              deptIdx = 2;
+            }
           }
 
           const departmentColors = {};
