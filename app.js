@@ -94,8 +94,18 @@ function syncPhysics() {
 }
 
 function calculateBalloonSize(score) {
-  const minSize = 70;
-  const maxSize = 140;
+  let minSize = 70;
+  let maxSize = 140;
+
+  const screenW = window.innerWidth;
+  if (screenW < 480) { // Mobile
+    minSize = 42;
+    maxSize = 78;
+  } else if (screenW < 1024) { // Tablet
+    minSize = 55;
+    maxSize = 110;
+  }
+
   return minSize + Math.min(1, score / 100) * (maxSize - minSize);
 }
 
@@ -171,15 +181,27 @@ function updatePhysics(timestamp) {
   const screenW = window.innerWidth;
   const count = balloonPhysicsList.length;
 
-  // Grid layout
-  const cols = Math.max(1, Math.ceil(Math.sqrt(count * 1.5)));
-  const colSpacing = Math.min(130, (screenW - 120) / cols);
-  const gridTotalWidth = colSpacing * (cols - 1);
-  // Center the grid exactly in the middle of the screen
-  const gridStartX = (screenW / 2) - (gridTotalWidth / 2);
+  // Responsive Grid Layout
+  let colSpacing = 120;
+  let rowSpacing = 180;
+  let titleBuffer = 260;
 
-  const titleBuffer = 260;
-  const rowSpacing = 180;
+  if (screenW < 480) { // Mobile
+    colSpacing = 65;
+    rowSpacing = 100;
+    titleBuffer = 160;
+  } else if (screenW < 1024) { // Tablet
+    colSpacing = 90;
+    rowSpacing = 140;
+    titleBuffer = 210;
+  }
+
+  // Calculate maximum columns that can fit
+  const maxCols = Math.max(1, Math.floor((screenW - 40) / colSpacing));
+  const cols = Math.min(maxCols, count || 1);
+
+  const gridTotalWidth = colSpacing * (cols - 1);
+  const gridStartX = (screenW / 2) - (gridTotalWidth / 2);
 
   // Sort by score descending
   const sortedBalloons = [...balloonPhysicsList].sort((a, b) => b.score - a.score);
@@ -195,11 +217,11 @@ function updatePhysics(timestamp) {
     const targetAnchorX = gridStartX + (col * colSpacing) + staggerX;
 
     // Vertical zigzag
-    const staggerY = (col % 2 === 0) ? -40 : 40;
-    const targetY = titleBuffer + (row * rowSpacing) + staggerY;
+    const staggerY = (col % 2 === 0) ? -20 : 20; // Reduced vertical zigzag on smaller screen
+    const targetY = titleBuffer + (row * rowSpacing) + (screenW < 480 ? staggerY * 0.4 : (screenW < 1024 ? staggerY * 0.7 : staggerY));
 
     bp.targetY = targetY;
-    bp.anchorY = targetY + 120;
+    bp.anchorY = targetY + (screenW < 480 ? 60 : (screenW < 1024 ? 90 : 120));
 
     // Snap anchorX directly (no slow lerp causing lag)
     bp.anchorX = targetAnchorX;
@@ -289,7 +311,7 @@ function drawStrings(timestamp) {
     const startX = bp.x;
     const startY = bp.y + bp.size * 0.5;
     const endX = startX + Math.sin(timestamp * 0.002 + parseInt(bp.id)) * 15;
-    const endY = startY + 100;
+    const endY = startY + (bp.size * 0.9); // Dynamic string length based on balloon size
     const midX = (startX + endX) / 2 + Math.cos(timestamp * 0.0015 + parseInt(bp.id)) * 10;
     const midY = (startY + endY) / 2;
 
@@ -322,12 +344,28 @@ window.popBalloon = popBalloon;
 // --- Resize Canvas ---
 function resizeCanvas() {
   const count = employees.length;
-  const cols = Math.max(1, Math.ceil(Math.sqrt(count * 1.5)));
-  const rows = Math.ceil(count / cols);
+  const screenW = window.innerWidth;
+  
+  let colSpacing = 120;
+  let rowSpacing = 180;
+  let titleBuffer = 260;
+  let groundBuffer = 350;
 
-  const titleBuffer = 260;
-  const rowSpacing = 180;
-  const groundBuffer = 350;
+  if (screenW < 480) { // Mobile
+    colSpacing = 65;
+    rowSpacing = 100;
+    titleBuffer = 160;
+    groundBuffer = 180;
+  } else if (screenW < 1024) { // Tablet
+    colSpacing = 90;
+    rowSpacing = 140;
+    titleBuffer = 210;
+    groundBuffer = 250;
+  }
+
+  const maxCols = Math.max(1, Math.floor((screenW - 40) / colSpacing));
+  const cols = Math.min(maxCols, count || 1);
+  const rows = Math.ceil(count / cols);
 
   const requiredHeight = titleBuffer + (rows * rowSpacing) + groundBuffer;
   const finalHeight = Math.max(window.innerHeight, requiredHeight);
@@ -339,6 +377,25 @@ function resizeCanvas() {
   const container = document.querySelector('.app-container');
   if (arena) arena.style.height = finalHeight + 'px';
   if (container) container.style.height = finalHeight + 'px';
+
+  // Re-calculate balloon sizes and update their element sizes/fonts
+  balloonPhysicsList.forEach(bp => {
+    bp.size = calculateBalloonSize(bp.score);
+    const domEl = document.getElementById(`bal-${bp.id}`);
+    if (domEl) {
+      domEl.style.width = `${bp.size}px`;
+      domEl.style.height = `${bp.size}px`;
+      
+      const scoreSpan = domEl.querySelector('.balloon-score');
+      if (scoreSpan) scoreSpan.style.fontSize = `${Math.max(12, bp.size * 0.22)}px`;
+      
+      const nameSpan = domEl.querySelector('.balloon-name');
+      if (nameSpan) nameSpan.style.fontSize = `${Math.max(10, bp.size * 0.12)}px`;
+      
+      const deptSpan = domEl.querySelector('.balloon-dept');
+      if (deptSpan) deptSpan.style.fontSize = `${Math.max(8, bp.size * 0.10)}px`;
+    }
+  });
 }
 
 // --- Admin & Excel Logic ---
@@ -423,18 +480,43 @@ function setupEventListeners() {
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
           const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
+          let nameIdx = 0;
+          let scoreIdx = 1;
+          let deptIdx = -1;
           let startIndex = 0;
-          if (json.length > 0 && isNaN(parseInt(json[0][1]))) startIndex = 1;
+
+          if (json.length > 0) {
+            const looksLikeHeader = isNaN(parseInt(json[0][1])) && isNaN(parseInt(json[0][0]));
+            if (looksLikeHeader) {
+              startIndex = 1;
+              const headers = json[0] || [];
+              for (let col = 0; col < headers.length; col++) {
+                const headerText = headers[col] ? headers[col].toString().toLowerCase().trim() : '';
+                if (headerText.includes('name') || headerText.includes('ชื่อ')) {
+                  nameIdx = col;
+                } else if (headerText.includes('score') || headerText.includes('คะแนน') || headerText.includes('point') || headerText.includes('qp')) {
+                  scoreIdx = col;
+                } else if (headerText.includes('dept') || headerText.includes('แผนก') || headerText.includes('department')) {
+                  deptIdx = col;
+                }
+              }
+            }
+          }
+
+          // Fallback if department column header wasn't found but sheet has 3+ columns
+          if (deptIdx === -1 && json[0] && json[0].length > 2) {
+            deptIdx = 2;
+          }
 
           const departmentColors = {};
           const newEmployees = [];
 
           for (let i = startIndex; i < json.length; i++) {
             const row = json[i];
-            if (!row || row.length < 2) continue;
-            const name = row[0] ? row[0].toString() : `พนง.${i}`;
-            const score = parseInt(row[1]) || 0;
-            const dept = row[2] ? row[2].toString().trim() : 'General';
+            if (!row || row.length <= Math.max(nameIdx, scoreIdx)) continue;
+            const name = row[nameIdx] ? row[nameIdx].toString() : `พนง.${i}`;
+            const score = parseInt(row[scoreIdx]) || 0;
+            const dept = (deptIdx !== -1 && row[deptIdx]) ? row[deptIdx].toString().trim() : 'General';
             const deptKey = dept.toUpperCase();
             if (!departmentColors[deptKey]) departmentColors[deptKey] = generateVibrantColor();
             newEmployees.push({

@@ -538,3 +538,32 @@ button, input, select { font-family: var(--font-family); color: inherit; }
 .modal-title { font-weight: 800; font-size: 1.2rem; }
 .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary); }
 .modal-footer { display: flex; gap: 10px; margin-top: 20px; }
+
+/* Responsive Media Queries */
+@media (max-width: 768px) {
+  .main-title {
+    font-size: 2.2rem;
+    top: 25px;
+  }
+  .control-panel {
+    width: 290px;
+    left: 15px;
+    top: 15px;
+    bottom: 15px;
+  }
+  .app-container:not(.sidebar-closed) .sidebar-toggle {
+    left: 310px;
+  }
+  .sidebar-toggle {
+    top: 15px;
+    left: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-title {
+    font-size: 1.8rem;
+    top: 20px;
+    letter-spacing: 2px;
+  }
+}
