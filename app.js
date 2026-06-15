@@ -309,13 +309,29 @@ function updatePhysics(timestamp) {
 
   const maxScore = sortedBalloons.length > 0 ? sortedBalloons[0].score : 0;
 
-  // Move the highest scorer (index 0) to the middle of the first row (cols / 2)
-  if (sortedBalloons.length > 2) {
-    const centerCol = Math.floor(cols / 2);
-    if (centerCol > 0 && centerCol < sortedBalloons.length) {
-      const temp = sortedBalloons[0];
-      sortedBalloons[0] = sortedBalloons[centerCol];
-      sortedBalloons[centerCol] = temp;
+  // Count how many balloons share the highest score
+  let k = 0;
+  while (k < sortedBalloons.length && sortedBalloons[k].score === maxScore) {
+    k++;
+  }
+
+  // Symmetrically center all highest scorers in the middle of the first row
+  if (k > 0 && sortedBalloons.length > 2) {
+    const center = Math.floor(cols / 2);
+    const centerOrder = [center];
+    for (let offset = 1; offset <= center; offset++) {
+      if (center + offset < cols) centerOrder.push(center + offset);
+      if (center - offset >= 0) centerOrder.push(center - offset);
+    }
+
+    const swapLimit = Math.min(k, cols, sortedBalloons.length);
+    for (let i = 0; i < swapLimit; i++) {
+      const targetIdx = centerOrder[i];
+      if (i !== targetIdx && targetIdx < sortedBalloons.length) {
+        const temp = sortedBalloons[i];
+        sortedBalloons[i] = sortedBalloons[targetIdx];
+        sortedBalloons[targetIdx] = temp;
+      }
     }
   }
 
