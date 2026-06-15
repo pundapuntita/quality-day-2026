@@ -14,6 +14,37 @@ function generateVibrantColor() {
   return `hsl(${hue}, 72%, 80%)`;
 }
 
+// --- Fixed Department Colors Mapping ---
+function getDepartmentColor(dept) {
+  if (!dept) return generateVibrantColor();
+  
+  const cleanDept = dept.toString().trim().toUpperCase();
+  
+  switch (cleanDept) {
+    case 'QA':
+      return 'hsl(110, 55%, 70%)'; // Soft Pastel Green
+    case 'QC':
+      return 'hsl(199, 80%, 75%)'; // Soft Pastel Blue
+    case 'PD ASEPTIC':
+      return 'hsl(24, 85%, 73%)';  // Soft Pastel Orange
+    case 'PD PACKING':
+      return 'hsl(53, 90%, 68%)';  // Soft Pastel Yellow
+    case 'MM':
+      return 'hsl(288, 65%, 73%)'; // Soft Pastel Purple
+    case 'E&M':
+    case 'E & M':
+      return 'hsl(328, 85%, 78%)'; // Soft Pastel Pink
+    case 'RA':
+    case 'HR':
+    case 'HSE':
+    case 'FA':
+    case 'TRAINEE':
+      return 'hsl(5, 90%, 72%)';   // Soft Pastel Red
+    default:
+      return generateVibrantColor();
+  }
+}
+
 // --- Default Preset Data ---
 const DEFAULT_EMPLOYEES = Array.from({ length: 120 }).map((_, i) => {
   const score = Math.floor(10 + (i / 119) * 90);
@@ -533,7 +564,6 @@ function setupEventListeners() {
             }
           }
 
-          const departmentColors = {};
           const newEmployees = [];
 
           for (let i = startIndex; i < json.length; i++) {
@@ -542,13 +572,11 @@ function setupEventListeners() {
             const name = row[nameIdx] ? row[nameIdx].toString() : `พนง.${i}`;
             const score = parseInt(row[scoreIdx]) || 0;
             const dept = (deptIdx !== -1 && row[deptIdx]) ? row[deptIdx].toString().trim() : 'General';
-            const deptKey = dept.toUpperCase();
-            if (!departmentColors[deptKey]) departmentColors[deptKey] = generateVibrantColor();
             newEmployees.push({
               id: Date.now().toString() + i + Math.random(),
               name, score,
               department: dept,
-              color: departmentColors[deptKey]
+              color: getDepartmentColor(dept)
             });
           }
 
